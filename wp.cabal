@@ -11,14 +11,21 @@ extra-doc-files:    CHANGELOG.md
 
 executable wp
     main-is:          Main.hs
+    other-modules:    Types
+                      Utils
+                      Parser
+                      DeclensionRules
+    
     hs-source-dirs:   app
     default-language: Haskell2010
-    default-extensions: OverloadedStrings  
+    default-extensions: OverloadedStrings
+    
     build-depends:    base ^>= 4.16.4.0,
-                     random >= 1.2.0,
-                     split >= 0.2,
-                     text,
-                     aeson,
-                     bytestring
+                      random >= 1.2.0,
+                      split >= 0.2,
+                      text,
+                      aeson,
+                      bytestring
+    
     ghc-options:      -Wall
-                     -fwarn-incomplete-patterns
+                      -fwarn-incomplete-patterns
