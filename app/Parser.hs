@@ -12,24 +12,35 @@ import Utils
 import qualified Data.Text as T
 import Data.Maybe (listToMaybe)
 
+-- | Parst einen Eingabestring und extrahiert Artikel (optional), Adjektiv und Nomen
+-- Gibt entweder einen Fehler (Left String) oder ein Tupel (Right) mit den extrahierten Werten zurück
 parseInput :: String -> Either String (Maybe String, String, String)
 parseInput input = validateAndCorrect $ case words (cleanInput input) of
+    -- Fall 1: Zwei Wörter - interpretiert als Adjektiv + Nomen
+    -- Nothing bedeutet "kein Artikel vorhanden"
     [adj, noun] -> (Nothing, adj, noun)
+    
+    -- Fall 2: Drei Wörter - interpretiert als Artikel + Adjektiv + Nomen
+    -- Just art bedeutet "Artikel vorhanden"
     [art, adj, noun] -> (Just art, adj, noun)
+    
+    -- Fehlerfall: Wenn die Eingabe nicht 2 oder 3 Wörter enthält
     _ -> error "Invalid input format"
 
--- 新增：获取原始输入的名词形式
+
+-- | Extrahiert das Nomen aus der Eingabe, unabhängig ob mit oder ohne Artikel
 getOriginalNoun :: String -> T.Text
 getOriginalNoun input = case words (cleanInput input) of
-    [_, noun] -> T.pack noun
-    [_, _, noun] -> T.pack noun
-    _ -> T.empty
+   -- Fall 1: Zwei Wörter (Adjektiv + Nomen)
+   [_, noun] -> T.pack noun         -- Wandelt das Nomen in Text um
+   
+   -- Fall 2: Drei Wörter (Artikel + Adjektiv + Nomen) 
+   [_, _, noun] -> T.pack noun      -- Wandelt das Nomen in Text um
+   
+   -- Fehlerfall: Ungültiges Format
+   _ -> T.empty                     -- Gibt leeren Text zurück
 
-lookupNoun :: T.Text -> [GermanNoun] -> Maybe GermanNoun
-lookupNoun searchWord nouns = 
-    case listToMaybe $ filter (\n -> word n == searchWord) nouns of
-        Just noun -> Just noun
-        Nothing -> listToMaybe $ filter (\n -> plural n == Just searchWord) nouns
+
 
 isArticlePlural :: Maybe String -> Gender -> Bool
 isArticlePlural Nothing _ = False
