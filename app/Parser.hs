@@ -48,9 +48,16 @@ isArticlePlural (Just "die") Feminine = False  -- die 用于阴性单数
 isArticlePlural (Just "die") _ = True          -- die 用于其他情况是复数
 isArticlePlural _ _ = False
 
--- 修改后的复数检查函数
+-- | Sucht ein Nomen in der Datenbank
+lookupNoun :: T.Text -> [GermanNoun] -> Maybe GermanNoun
+lookupNoun searchWord nouns =
+    case listToMaybe $ filter (\n -> word n == searchWord) nouns of
+        Just noun -> Just noun
+        Nothing -> listToMaybe $ filter (\n -> plural n == Just searchWord) nouns
+
+-- | Prüft ob ein Wort die Pluralform eines Nomens ist
 lookupNounForPlural :: T.Text -> T.Text -> [GermanNoun] -> Bool
-lookupNounForPlural originalWord dbWord nouns = 
+lookupNounForPlural originalWord dbWord nouns =
     let originalStr = T.unpack originalWord
         isEnEnding = length originalStr > 2 && drop (length originalStr - 2) originalStr == "en"
     in case lookupNoun dbWord nouns of
@@ -59,6 +66,7 @@ lookupNounForPlural originalWord dbWord nouns =
             Nothing -> isEnEnding
         Nothing -> isEnEnding
 
+-- | Validiert das Nomen gegen die Datenbank
 validateNoun :: [GermanNoun] -> (Maybe String, String, String) -> Either String (Maybe String, String, GermanNoun)
 validateNoun nouns (art, adj, nounStr) =
     case lookupNoun (T.pack nounStr) nouns of

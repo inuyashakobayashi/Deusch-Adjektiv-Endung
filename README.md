@@ -58,3 +58,39 @@ Beispiele für gültige Eingaben:
 Geben Sie die Phrasen ohne Adjektivendungen ein, das Programm wird die korrekten Endungen bestimmen.
 #Beenden
 Um das Programm zu beenden, drücken Sie Ctrl+C.
+
+
+flowchart TD
+    A[Start] --> B{Mit Artikel?}
+    
+    %% Ohne Artikel - der-Form
+    B -->|Nein| C{Ist Plural?}
+    C -->|Nein| D[Prüfe der-Form]
+    D --> D1{Welches Geschlecht?}
+    D1 -->|Maskulin| D2[Endung: -er]
+    D1 -->|Feminin| D3[Endung: -e]
+    D1 -->|Neutral| D4[Endung: -es]
+    C -->|Ja| C1[Endung: -e]
+
+    %% Mit Artikel
+    B -->|Ja| E{Standard Form?}
+    E -->|Nein| F[Endung: -en]
+    
+    E -->|Ja| G{Ist Plural?}
+    G -->|Ja| H[Endung: -en]
+    
+    G -->|Nein| I{Zeigt Geschlecht?}
+    I -->|Ja| J[Endung: -e]
+    
+    I -->|Nein| K{Welches Geschlecht?}
+    K -->|Maskulin| L[Endung: -er]
+    K -->|Neutral| M[Endung: -es]
+
+    %% Beispiele
+    style O1 fill:#f9f,stroke:#333
+    O1[Beispiele:]
+    O2[der Mann -> Standard Form]
+    O3[die Frau -> Standard Form]
+    O4[der Frau -> Nicht Standard Form]
+    O5[eine/dieser/jede -> Zeigt Geschlecht]
+    O6[sein/mein -> Zeigt kein Geschlecht]
