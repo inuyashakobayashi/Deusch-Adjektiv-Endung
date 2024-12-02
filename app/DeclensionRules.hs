@@ -50,15 +50,17 @@ getSingularEnding gender caseType = case (gender, caseType) of
     (Feminine, Accusative) -> "e"
     (Neuter, Accusative) -> "es"
     _ -> "en"
-
+--tatächtlich wenn es ohne Artikel kann man es nur ob es in genitiv und nominativ erkennen
 getPluralEnding :: Case -> String
 getPluralEnding caseType = case caseType of
-    Nominative -> "e"   -- die guten Männer
-    Accusative -> "en"  -- die guten Männer
+    Nominative -> "e"   
+    Accusative -> "en"  
     _ -> "en"
 
 showsGender :: String -> Bool
 showsGender article = not $ article `elem` ["ein", "mein", "dein", "sein", "ihr", "unser", "euer", "Ihr"]
+--hier sollt noch mehr ergänzen
+
 
 getAdjectiveEnding :: AdjectivePhrase -> String
 getAdjectiveEnding phrase = 
@@ -82,15 +84,12 @@ getAdjectiveEnding phrase =
                         Neuter -> "es"
                         _ -> "e"
                     else "e"
-
+--Mapping from json Datei
 genderFromText :: T.Text -> Gender
 genderFromText g = case T.unpack g of
     "m" -> Masculine
     "f" -> Feminine
     "n" -> Neuter
-    "masculine" -> Masculine
-    "feminine" -> Feminine
-    "neuter" -> Neuter
     _ -> Neuter
 
 getReasoningSteps :: AdjectivePhrase -> String

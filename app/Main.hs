@@ -35,8 +35,12 @@ mainLoop nouns = do
                         TIO.putStrLn $ "Debug: Database noun: " <> word noun
                         TIO.putStrLn $ "Debug: Noun gender: " <> gender noun
                         
+                        -- Bestimme, ob das Nomen im Plural ist,wenn es noun plural und singular gleich,nehmen wir an,dass es plural ist
                         let nounGender = genderFromText $ gender noun
-                        let nounIsPlural = lookupNounForPlural originalNoun (word noun) nouns
+                        let nounIsPlural = case plural noun of
+                                              Just pluralForm -> originalNoun == pluralForm
+                                              Nothing -> False
+                                              
                         let articleIndicatesPlural = isArticlePlural art nounGender
                         let isPlural = nounIsPlural || articleIndicatesPlural
                         
@@ -45,6 +49,7 @@ mainLoop nouns = do
                         TIO.putStrLn $ "Debug: Article plural check: " <> T.pack (show articleIndicatesPlural)
                         TIO.putStrLn $ "Debug: Final plural decision: " <> T.pack (show isPlural)
                         
+                        -- Erstelle die Adjektivphrase
                         let phrase = AdjectivePhrase {
                             article = art,
                             adjective = adj',
@@ -54,17 +59,25 @@ mainLoop nouns = do
                             number = if isPlural then Plural else Singular,
                             case_ = Nominative
                         }
+                        -- Erhalte die Begründungsschritte
                         let reasoning = getReasoningSteps phrase
                         TIO.putStrLn $ T.pack reasoning
+                        
+                        -- Berechne die Endung des Adjektivs
                         let ending = getAdjectiveEnding phrase
                         let finalResult = case art of
-                             Nothing -> adj' ++ ending ++ " " ++ T.unpack originalNoun  -- 使用原始名词形式
+                             Nothing -> adj' ++ ending ++ " " ++ T.unpack originalNoun  -- Verwende das ursprüngliche Nomen
                              Just article -> article ++ " " ++ adj' ++ ending ++ " " ++ T.unpack originalNoun
+                        
                         TIO.putStrLn $ T.pack $ "Final result: " ++ finalResult
+            -- Wiederhole die Schleife
             mainLoop nouns
+
 main :: IO ()
 main = do
     hSetEncoding stdin utf8
     hSetEncoding stdout utf8
     nouns <- loadNouns "germannoun.json"
     mainLoop nouns
+{-main Funktion hier um die germannoun.json zu laden und ins nouns zuweisen
+danach führen wir das mainloop Funktion aus-}

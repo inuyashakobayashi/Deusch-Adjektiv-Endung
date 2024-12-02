@@ -49,22 +49,26 @@ isArticlePlural (Just "die") _ = True          -- die 用于其他情况是复�
 isArticlePlural _ _ = False
 
 -- | Sucht ein Nomen in der Datenbank
+{-hier sucht word in json datei,wenn noun word gibt dann zurückliefert 
+die noun
+hier die struktur noun ist ein json,man kann einfach in die germannoun.json
+einschauen,
+{
+      "word": "Baske",
+      "gender": "m",
+      "plural": "Basken"
+    },
+
+    das ist ein beispiel ,und wenn man die singular nicht finden,
+    findet es anstatt plural
+-}
 lookupNoun :: T.Text -> [GermanNoun] -> Maybe GermanNoun
 lookupNoun searchWord nouns =
     case listToMaybe $ filter (\n -> word n == searchWord) nouns of
         Just noun -> Just noun
         Nothing -> listToMaybe $ filter (\n -> plural n == Just searchWord) nouns
 
--- | Prüft ob ein Wort die Pluralform eines Nomens ist
-lookupNounForPlural :: T.Text -> T.Text -> [GermanNoun] -> Bool
-lookupNounForPlural originalWord dbWord nouns =
-    let originalStr = T.unpack originalWord
-        isEnEnding = length originalStr > 2 && drop (length originalStr - 2) originalStr == "en"
-    in case lookupNoun dbWord nouns of
-        Just noun -> case plural noun of
-            Just pluralForm -> originalWord == pluralForm || (isEnEnding && originalWord /= word noun)
-            Nothing -> isEnEnding
-        Nothing -> isEnEnding
+
 
 -- | Validiert das Nomen gegen die Datenbank
 validateNoun :: [GermanNoun] -> (Maybe String, String, String) -> Either String (Maybe String, String, GermanNoun)
