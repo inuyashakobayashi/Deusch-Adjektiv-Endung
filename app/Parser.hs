@@ -2,7 +2,6 @@ module Parser
     ( parseInput
     , lookupNoun
     , validateNoun
-    , lookupNounForPlural
     , isArticlePlural
     , getOriginalNoun
     ) where

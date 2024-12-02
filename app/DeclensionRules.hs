@@ -9,14 +9,18 @@ module DeclensionRules
 
 import Types
 import qualified Data.Text as T
-
 isStandardForm :: String -> Gender -> Case -> Bool
-isStandardForm article gender caseType = case (article,gender,caseType) of
+isStandardForm art gen caseType = case (art,gen,caseType) of
+    -- Bestimmte Artikel
     ("der",Masculine,Nominative) -> True
     ("die",Feminine,Nominative) -> True
     ("das",Neuter,Nominative) -> True
+    
+    -- Unbestimmte Artikel
     ("ein",_,Nominative) -> True
     ("eine",Feminine,Nominative) -> True
+    
+    -- Possessivpronomen
     ("ihre",Feminine,Nominative) -> True
     ("ihr",_,Nominative) -> True
     ("kein",_,Nominative) -> True
@@ -33,16 +37,43 @@ isStandardForm article gender caseType = case (article,gender,caseType) of
     ("seine",Feminine,Nominative) -> True
     ("dein",_,Nominative) -> True
     ("deine",Feminine,Nominative) -> True
+    
+    -- Demonstrativpronomen
+    ("dieser",Masculine,Nominative) -> True
+    ("diese",Feminine,Nominative) -> True
+    ("dieses",Neuter,Nominative) -> True
+    
+    -- Indefinitpronomen
+    ("jede",Feminine,Nominative) -> True
+    ("jedes",Neuter,Nominative) -> True
+    ("jeder",Masculine,Nominative) -> True
+    
+    ("mancher",Masculine,Nominative) -> True
+    ("manche",Feminine,Nominative) -> True
+    ("manches",Neuter,Nominative) -> True
+    
+    ("welcher",Masculine,Nominative) -> True
+    ("welche",Feminine,Nominative) -> True
+    ("welches",Neuter,Nominative) -> True
+    
+    ("solcher",Masculine,Nominative) -> True
+    ("solche",Feminine,Nominative) -> True
+    ("solches",Neuter,Nominative) -> True
+    
     _ -> False
+    
+    
+
+    --viele und viel ist kein artikel und beide und wenige mehrere und einige
 
 getDerForm :: Gender -> Case -> Bool -> String
-getDerForm gender caseType isPlural = 
+getDerForm gen caseType isPlural = 
     if isPlural 
         then getPluralEnding caseType  -- Plural-Endungen
-        else getSingularEnding gender caseType  -- Singular-Endungen
+        else getSingularEnding gen caseType  -- Singular-Endungen
 
 getSingularEnding :: Gender -> Case -> String
-getSingularEnding gender caseType = case (gender, caseType) of
+getSingularEnding gen caseType = case (gen, caseType) of
     (Masculine, Nominative) -> "er"
     (Feminine, Nominative) -> "e"
     (Neuter, Nominative) -> "es"
@@ -58,7 +89,7 @@ getPluralEnding caseType = case caseType of
     _ -> "en"
 
 showsGender :: String -> Bool
-showsGender article = not $ article `elem` ["ein", "mein", "dein", "sein", "ihr", "unser", "euer", "Ihr"]
+showsGender art = not $ art `elem` ["ein", "mein", "dein", "sein", "ihr", "unser", "euer", "Ihr"]
 --hier sollt noch mehr ergänzen
 
 
@@ -92,42 +123,41 @@ genderFromText g = case T.unpack g of
     "n" -> Neuter
     _ -> Neuter
 
+
 getReasoningSteps :: AdjectivePhrase -> String
-getReasoningSteps phrase = 
-    let isPlural = number phrase == Plural
-    in case articleType phrase of
+getReasoningSteps phrase =
+    case articleType phrase of
         NoArticle -> unlines [
-            "Step 1: Checking for article - No article found",
+            "Step 1: Checking for article - No article found-->get-der-form",
             "Step 2: Checking number - " ++ (if isPlural then "Plural" else "Singular"),
-            "Step 3: Getting " ++ (if isPlural then "plural" else "der-form") ++ 
-                " ending for " ++ T.unpack (gender $ noun phrase) ++ 
+            "Step 3: Getting " ++ (if isPlural then "plural" else "der-form") ++
+                " ending for " ++ T.unpack (gender $ noun phrase) ++
                 " noun in " ++ show (case_ phrase) ++ " case",
-            "Step 4: Using " ++ (if isPlural then "plural" else "der-word") ++ 
-                " ending: " ++ getDerForm (genderFromText $ gender $ noun phrase) 
-                                        (case_ phrase) 
+            "Step 4: Using " ++ (if isPlural then "plural" else "der-word") ++
+                " ending: " ++ getDerForm (genderFromText $ gender $ noun phrase)
+                                        (case_ phrase)
                                         isPlural
             ]
         _ -> case article phrase of
             Nothing -> "Error: Article type present but no article string found"
             Just art -> unlines [
                 "Step 1: Checking for article - Found article: " ++ art,
-                "Step 2: Checking number - " ++ 
+                "Step 2: Checking if article is in standard form - " ++
+                    (if isStandardForm art (genderFromText $ gender $ noun phrase) (case_ phrase)
+                        then "Yes, standard form -> continue checks"
+                        else "No, modified form -> use -en"),
+                "Step 3: Checking number - " ++
                     (if isPlural 
                         then "Plural form detected -> use -en"
                         else "Singular form detected -> continue checks"),
-                if not isPlural then
-                    "Step 3: Checking if article is in standard form - " ++
-                    (if isStandardForm art (genderFromText $ gender $ noun phrase) (case_ phrase)
-                        then "Yes, standard form"
-                        else "No, modified form -> use -en")
-                else "",
-                if not isPlural then
-                    "Step 4: Checking if article shows gender - " ++
-                    (if showsGender art
-                        then "Yes -> use -e"
-                        else "No -> use " ++ case genderFromText $ gender $ noun phrase of
-                            Masculine -> "-er"
-                            Neuter -> "-es"
-                            Feminine -> "-e")
-                else ""
+                if not isPlural && isStandardForm art (genderFromText $ gender $ noun phrase) (case_ phrase)
+                    then "Step 4: Checking if article shows gender - " ++
+                        (if showsGender art
+                            then "Yes -> use -e"
+                            else "No -> use " ++ case genderFromText $ gender $ noun phrase of
+                                Masculine -> "-er"
+                                Neuter -> "-es"
+                                Feminine -> "-e")
+                    else ""
                 ]
+ where isPlural = number phrase == Plural
