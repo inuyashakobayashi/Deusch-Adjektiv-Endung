@@ -60,6 +60,9 @@ Geben Sie die Phrasen ohne Adjektivendungen ein, das Programm wird die korrekten
 Um das Programm zu beenden, drücken Sie Ctrl+C.
 
 
+## Workflow Diagramm
+
+```mermaid
 flowchart TD
     A[Start] --> B{Mit Artikel?}
     
