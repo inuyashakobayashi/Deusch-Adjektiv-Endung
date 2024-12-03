@@ -5,42 +5,67 @@ import GHC.Generics
 import Data.Aeson
 
 data Gender = Masculine | Feminine | Neuter
-  deriving (Show, Eq)
+    deriving (Show, Eq)
 
 data Number = Singular | Plural
-  deriving (Show, Eq)
+    deriving (Show, Eq)
 
 data Case = Nominative | Accusative | Dative | Genitive
-  deriving (Show, Eq)
+    deriving (Show, Eq)
 
 data GermanNoun = GermanNoun {
-  word :: T.Text,
-  gender :: T.Text,
-  plural :: Maybe T.Text
+    word :: T.Text,
+    gender :: T.Text,
+    plural :: Maybe T.Text
 } deriving (Show, Eq)
 
-data ArticleType
-  = Definite | Demonstrative | Universal | Indefinite
-  | Some | Such | Interrogative | Possessive
-  | Negative | All | Both | NoArticle
-  deriving (Show, Eq)
+-- Erweiterte ArticleType um alle möglichen Artikel-Typen
+data ArticleType 
+    = Definite        -- der, die, das
+    | Demonstrative   -- dieser, diese, dieses
+    | Universal       -- jeder, jede, jedes
+    | Indefinite      -- ein, eine
+    | Some           -- mancher, manche, manches
+    | Such           -- solcher, solche, solches
+    | Interrogative  -- welcher, welche, welches
+    | Possessive     -- mein, dein, etc.
+    | Negative       -- kein
+    | All            -- alle (nur Plural)
+    | Both           -- beide
+    | NoArticle      -- kein Artikel
+    deriving (Show, Eq)
 
-data PossessiveType
-  = Mein | Dein | Sein | Ihr | Unser | Euer
-  deriving (Show, Eq)
+-- Erweiterte PossessiveType um spezielle Fälle wie unser/euer
+data PossessiveType 
+    = Mein 
+    | Dein 
+    | Sein 
+    | Ihr 
+    | Unser    -- Spezialfall: -er ist Teil des Artikels
+    | Euer     -- Spezialfall: -er ist Teil des Artikels
+    deriving (Show, Eq)
+
+-- Neue data type für nicht-Artikel Wörter die wie Adjektive dekliniert werden
+data NonArticleAdjective 
+    = Viele      -- viele
+    | Einige     -- einige
+    | Mehrere    -- mehrere
+    | Wenige     -- wenige
+    deriving (Show, Eq)
 
 data Ending = E | En | Er | Es | Empty
-  deriving (Show, Eq)
+    deriving (Show, Eq)
 
 data AdjectivePhrase = AdjectivePhrase
-  { article :: Maybe String
-  , adjective :: String
-  , noun :: GermanNoun
-  , articleType :: ArticleType
-  , possessiveType :: Maybe PossessiveType
-  , number :: Number
-  , case_ :: Case
-  } deriving (Show)
+    { article :: Maybe String
+    , adjective :: String
+    , noun :: GermanNoun
+    , articleType :: ArticleType
+    , possessiveType :: Maybe PossessiveType
+    , nonArticleAdj :: Maybe NonArticleAdjective  -- Neue Field für nicht-Artikel
+    , number :: Number
+    , case_ :: Case
+    } deriving (Show)
 
 instance FromJSON GermanNoun where
     parseJSON = withObject "GermanNoun" $ \v -> GermanNoun

@@ -15,7 +15,23 @@ loadNouns filePath = do
     case eitherDecode content of
         Left err -> error $ "Error parsing JSON: " ++ err
         Right nouns -> return nouns
+-- Helper für Quantifikatoren
+isQuantifier :: String -> Bool
+isQuantifier word = word `elem` [
+    "viel", "viele", 
+    "wenig", "wenige", 
+    "einige", "mehrere"
+    ]
 
+-- Vorverarbeitung der AdjectivePhrase
+preprocessPhrase :: AdjectivePhrase -> AdjectivePhrase
+preprocessPhrase phrase = 
+    case article phrase of
+        Just art | isQuantifier art -> 
+            phrase { articleType = NoArticle }  -- Quantifikatoren als NoArticle behandeln
+        _ -> phrase
+
+-- Modifizierte mainLoop
 mainLoop :: [GermanNoun] -> IO ()
 mainLoop nouns = do
     TIO.putStrLn "\nEnter German phrase (or 'quit' to exit):"
@@ -30,48 +46,37 @@ mainLoop nouns = do
                     Left err -> TIO.putStrLn $ T.pack err
                     Right (art, adj', noun) -> do
                         let originalNoun = getOriginalNoun (T.unpack input)
-                        
-                        TIO.putStrLn $ "Debug: Original input noun: " <> originalNoun
-                        TIO.putStrLn $ "Debug: Database noun: " <> word noun
-                        TIO.putStrLn $ "Debug: Noun gender: " <> gender noun
-                        
-                        -- Bestimme, ob das Nomen im Plural ist,wenn es noun plural und singular gleich,nehmen wir an,dass es plural ist
-                        let nounGender = genderFromText $ gender noun
                         let nounIsPlural = case plural noun of
-                                              Just pluralForm -> originalNoun == pluralForm
-                                              Nothing -> False
-                                              
-                        let articleIndicatesPlural = isArticlePlural art nounGender
-                        let isPlural = nounIsPlural || articleIndicatesPlural
+                                                Just pluralForm -> originalNoun == pluralForm
+                                                Nothing -> False
+                        let isPlural = nounIsPlural
                         
-                        TIO.putStrLn $ "Debug: Actual gender: " <> T.pack (show nounGender)
-                        TIO.putStrLn $ "Debug: Noun plural check: " <> T.pack (show nounIsPlural)
-                        TIO.putStrLn $ "Debug: Article plural check: " <> T.pack (show articleIndicatesPlural)
-                        TIO.putStrLn $ "Debug: Final plural decision: " <> T.pack (show isPlural)
-                        
-                        -- Erstelle die Adjektivphrase
-                        let phrase = AdjectivePhrase {
+                        -- Erstelle ursprüngliche Phrase
+                        let initialPhrase = AdjectivePhrase {
                             article = art,
                             adjective = adj',
                             noun = noun,
                             articleType = if art == Nothing then NoArticle else Definite,
-                            possessiveType = Nothing,
                             number = if isPlural then Plural else Singular,
                             case_ = Nominative
                         }
-                        -- Erhalte die Begründungsschritte
+                        
+                        -- Vorverarbeitung der Phrase für Quantifikatoren
+                        let phrase = preprocessPhrase initialPhrase
+                        
+                        -- Verwende die unveränderte getReasoningSteps Funktion
                         let reasoning = getReasoningSteps phrase
-                        TIO.putStrLn $ T.pack reasoning
-                        
-                        -- Berechne die Endung des Adjektivs
                         let ending = getAdjectiveEnding phrase
-                        let finalResult = case art of
-                             Nothing -> adj' ++ ending ++ " " ++ T.unpack originalNoun  -- Verwende das ursprüngliche Nomen
-                             Just article -> article ++ " " ++ adj' ++ ending ++ " " ++ T.unpack originalNoun
                         
+                        -- Rest der Logik bleibt gleich
+                        let finalResult = case art of
+                                              Nothing      -> adj' ++ ending ++ " " ++ T.unpack originalNoun
+                                              Just article -> article ++ " " ++ adj' ++ ending ++ " " ++ T.unpack originalNoun
+                        
+                        TIO.putStrLn $ T.pack reasoning
                         TIO.putStrLn $ T.pack $ "Final result: " ++ finalResult
-            -- Wiederhole die Schleife
-            mainLoop nouns
+                        
+                        mainLoop nouns
 
 main :: IO ()
 main = do
