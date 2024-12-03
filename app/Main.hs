@@ -8,7 +8,7 @@ import qualified Data.Text as T
 import System.IO (hSetEncoding, stdout, stdin, utf8)
 import Data.Aeson (eitherDecode)
 import qualified Data.ByteString.Lazy as B
-
+import Validate
 loadNouns :: FilePath -> IO [GermanNoun]
 loadNouns filePath = do
     content <- B.readFile filePath
@@ -16,93 +16,31 @@ loadNouns filePath = do
         Left err -> error $ "Error parsing JSON: " ++ err
         Right nouns -> return nouns
 -- Helper für Quantifikatoren
-isQuantifier :: String -> Bool
-isQuantifier word = word `elem` [
-    "viel", "viele", 
-    "wenig", "wenige", 
-    "einige", "mehrere"
-    ]
-isDefinite :: String -> Bool
-isDefinite word = word `elem` [
-  "der", "die", "das", 
-  "dem", "den",
-  "des"
-  ]
 
-isDemonstrative :: String -> Bool
-isDemonstrative word = word `elem` [
-  "dieser", "diese", "dieses",
-  "diesem", "diesen",
-  "jener", "jene", "jenes",
-  "jenem", "jenen"
-  ]
-
-isUniversal :: String -> Bool
-isUniversal word = word `elem` [
-  "jeder", "jede", "jedes",
-  "jedem", "jeden"
-  ]
-
-isIndefinite :: String -> Bool
-isIndefinite word = word `elem` [
-  "ein", "eine", "eines",
-  "einem", "einen",
-  "einer"
-  ]
-
-isSome :: String -> Bool
-isSome word = word `elem` [
-  "mancher", "manche", "manches",
-  "manchem", "manchen"
-  
-  ]
-
-isSuch :: String -> Bool
-isSuch word = word `elem` [
-  "solcher", "solche", "solches",
-  "solchem", "solchen"
-  ]
-
-isInterrogative :: String -> Bool
-isInterrogative word = word `elem` [
-  "welcher", "welche", "welches",
-  "welchem", "welchen"
-  ]
-
-isPossessive :: String -> Bool
-isPossessive word = word `elem` [
-  "mein", "meine", "meines",
-  "dein", "deine", "deines",
-  "sein", "seine", "seines",
-  "ihr", "ihre", "ihres",
-  "unser", "unsere", "unseres",
-  "euer", "eure", "eures"
-  ]
-
-isNegative :: String -> Bool
-isNegative word = word `elem` [
-  "kein", "keine", "keines",
-  "keinem", "keinen",
-  "keiner"
-  ]
-
-
-
-isAll :: String -> Bool
-isAll word = word `elem` [
-  "alle"
-  ]
-
-isBoth :: String -> Bool
-isBoth word = word `elem` [
-  "beide"
-  ]
 -- Vorverarbeitung der AdjectivePhrase
 preprocessPhrase :: AdjectivePhrase -> AdjectivePhrase
 preprocessPhrase phrase =
     case article phrase of
-        Just art | isQuantifier art || isAll art || isBoth art -> 
+        Just art | isQuantifier art || isAll art || isBoth art ->
             phrase { articleType = NoArticle }
+        Just art | isDefinite art ->
+            phrase { articleType = Definite }
+        Just art | isDemonstrative art ->
+            phrase { articleType = Demonstrative }
+        Just art | isUniversal art ->
+            phrase { articleType = Universal }
+        Just art | isIndefinite art ->
+            phrase { articleType = Indefinite }
+        Just art | isSome art ->
+            phrase { articleType = Some }
+        Just art | isSuch art ->
+            phrase { articleType = Such }
+        Just art | isInterrogative art ->
+            phrase { articleType = Interrogative }
+        Just art | isPossessive art ->
+            phrase { articleType = Possessive }
+        Just art | isNegative art ->
+            phrase { articleType = Negative }
         _ -> phrase
 
 -- Modifizierte mainLoop
