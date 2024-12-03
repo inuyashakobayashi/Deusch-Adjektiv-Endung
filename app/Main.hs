@@ -22,13 +22,87 @@ isQuantifier word = word `elem` [
     "wenig", "wenige", 
     "einige", "mehrere"
     ]
+isDefinite :: String -> Bool
+isDefinite word = word `elem` [
+  "der", "die", "das", 
+  "dem", "den",
+  "des"
+  ]
 
+isDemonstrative :: String -> Bool
+isDemonstrative word = word `elem` [
+  "dieser", "diese", "dieses",
+  "diesem", "diesen",
+  "jener", "jene", "jenes",
+  "jenem", "jenen"
+  ]
+
+isUniversal :: String -> Bool
+isUniversal word = word `elem` [
+  "jeder", "jede", "jedes",
+  "jedem", "jeden"
+  ]
+
+isIndefinite :: String -> Bool
+isIndefinite word = word `elem` [
+  "ein", "eine", "eines",
+  "einem", "einen",
+  "einer"
+  ]
+
+isSome :: String -> Bool
+isSome word = word `elem` [
+  "mancher", "manche", "manches",
+  "manchem", "manchen"
+  
+  ]
+
+isSuch :: String -> Bool
+isSuch word = word `elem` [
+  "solcher", "solche", "solches",
+  "solchem", "solchen"
+  ]
+
+isInterrogative :: String -> Bool
+isInterrogative word = word `elem` [
+  "welcher", "welche", "welches",
+  "welchem", "welchen"
+  ]
+
+isPossessive :: String -> Bool
+isPossessive word = word `elem` [
+  "mein", "meine", "meines",
+  "dein", "deine", "deines",
+  "sein", "seine", "seines",
+  "ihr", "ihre", "ihres",
+  "unser", "unsere", "unseres",
+  "euer", "eure", "eures"
+  ]
+
+isNegative :: String -> Bool
+isNegative word = word `elem` [
+  "kein", "keine", "keines",
+  "keinem", "keinen",
+  "keiner"
+  ]
+
+
+
+isAll :: String -> Bool
+isAll word = word `elem` [
+  "alle"
+  ]
+
+isBoth :: String -> Bool
+isBoth word = word `elem` [
+  "beide"
+  ]
 -- Vorverarbeitung der AdjectivePhrase
 preprocessPhrase :: AdjectivePhrase -> AdjectivePhrase
-preprocessPhrase phrase = 
+preprocessPhrase phrase =
     case article phrase of
-        Just art | isQuantifier art -> 
-            phrase { articleType = NoArticle }  -- Quantifikatoren als NoArticle behandeln
+        Just art | isQuantifier art || isAll art || isBoth art -> 
+            phrase { articleType = NoArticle }
         _ -> phrase
 
 -- Modifizierte mainLoop
@@ -44,7 +118,7 @@ mainLoop nouns = do
                     TIO.putStrLn $ T.pack $ "Error: " ++ err
                 Right result -> case validateNoun nouns result of
                     Left err -> TIO.putStrLn $ T.pack err
-                    Right (art, adj', noun) -> do
+                    Right (art, adj', noun) -> do--hier noun ist ein Objekt
                         let originalNoun = getOriginalNoun (T.unpack input)
                         let nounIsPlural = case plural noun of
                                                 Just pluralForm -> originalNoun == pluralForm
@@ -56,9 +130,9 @@ mainLoop nouns = do
                             article = art,
                             adjective = adj',
                             noun = noun,
-                            articleType = if art == Nothing then NoArticle else Definite,
+                            articleType = if art == Nothing then NoArticle else Definite,--hier sollte besser sein,kann man ein Atikelcheck funktion Schreiben
                             number = if isPlural then Plural else Singular,
-                            case_ = Nominative
+                            case_ = Nominative --hier kann man auch checken
                         }
                         
                         -- Vorverarbeitung der Phrase für Quantifikatoren
@@ -82,7 +156,7 @@ main :: IO ()
 main = do
     hSetEncoding stdin utf8
     hSetEncoding stdout utf8
-    nouns <- loadNouns "germannoun.json"
+    nouns <- loadNouns "german_nouns.json"
     mainLoop nouns
 {-main Funktion hier um die germannoun.json zu laden und ins nouns zuweisen
 danach führen wir das mainloop Funktion aus-}

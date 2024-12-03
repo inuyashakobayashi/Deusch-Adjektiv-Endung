@@ -16,7 +16,8 @@ data Case = Nominative | Accusative | Dative | Genitive
 data GermanNoun = GermanNoun {
     word :: T.Text,
     gender :: T.Text,
-    plural :: Maybe T.Text
+    plural :: Maybe T.Text,
+    genitive :: T.Text
 } deriving (Show, Eq)
 
 -- Erweiterte ArticleType um alle möglichen Artikel-Typen
@@ -72,3 +73,4 @@ instance FromJSON GermanNoun where
         <$> v .: "word"
         <*> v .: "gender"
         <*> v .:? "plural"
+        <*> v .: "genitive"
