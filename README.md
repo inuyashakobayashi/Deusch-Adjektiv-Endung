@@ -75,6 +75,15 @@ Geben Sie die Phrasen ohne Adjektivendungen ein, das Programm wird die korrekten
 #Beenden
 Um das Programm zu beenden, drücken Sie Ctrl+C.
 
+## Datenquelle und Lizenz
+
+Die deutschen Wortdaten basieren auf dem UniMorph-Projekt:
+- Quelle: [UniMorph DEU Repository](https://github.com/unimorph/deu)
+- Lizenz: [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
+
+Das Originaldatenset wurde verarbeitet und in ein JSON-Format für dieses Projekt konvertiert. Gemäß der Share-Alike-Bedingungen der CC BY-SA 3.0 Lizenz steht diese abgeleitete Arbeit unter derselben Lizenz.
+
+
 
 ## Workflow Diagramm
 
