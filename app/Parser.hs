@@ -13,18 +13,7 @@ import Data.Maybe (listToMaybe)
 
 -- | Parst einen Eingabestring und extrahiert Artikel (optional), Adjektiv und Nomen
 -- Gibt entweder einen Fehler (Left String) oder ein Tupel (Right) mit den extrahierten Werten zurück
-parseInput :: String -> Either String (Maybe String, String, String)
-parseInput input = validateAndCorrect $ case words (cleanInput input) of
-    -- Fall 1: Zwei Wörter - interpretiert als Adjektiv + Nomen
-    -- Nothing bedeutet "kein Artikel vorhanden"
-    [adj, noun] -> (Nothing, adj, noun)
-    
-    -- Fall 2: Drei Wörter - interpretiert als Artikel + Adjektiv + Nomen
-    -- Just art bedeutet "Artikel vorhanden"
-    [art, adj, noun] -> (Just art, adj, noun)
-    
-    -- Fehlerfall: Wenn die Eingabe nicht 2 oder 3 Wörter enthält
-    _ -> error "Invalid input format"
+
 
 
 -- | Extrahiert das Nomen aus der Eingabe, unabhängig ob mit oder ohne Artikel
@@ -69,9 +58,35 @@ lookupNoun searchWord nouns =
 
 
 
--- | Validiert das Nomen gegen die Datenbank
+-- Parser.hs
+parseInput :: String -> Either String (Maybe String, String, String)
+parseInput input = case words (cleanInput input) of
+    -- Leere Eingabe
+    [] -> Left "Tipp: Bitte geben Sie ein Adjektiv und ein Nomen ein.\nBeispiel: 'gut Haus' oder 'das groß Haus'"
+    
+    -- Nur ein Wort
+    [word] -> Left $ "Tipp: '" ++ word ++ "' ist unvollständig.\n" ++
+              "Bitte geben Sie ein Adjektiv und ein Nomen ein.\n" ++
+              "Beispiele:\n- gut Haus\n- das groß Haus"
+    
+    -- Zwei Wörter (Adjektiv + Nomen)
+    [adj, noun] -> Right (Nothing, adj, noun)
+    
+    -- Drei Wörter (Artikel + Adjektiv + Nomen)
+    [art, adj, noun] -> Right (Just art, adj, noun)
+    
+    -- Zu viele Wörter
+    _ -> Left "Tipp: Bitte geben Sie maximal drei Wörter ein.\nFormat: [Artikel] Adjektiv Nomen\nBeispiel: 'das groß Haus'"
+
+-- Noun Validation
 validateNoun :: [GermanNoun] -> (Maybe String, String, String) -> Either String (Maybe String, String, GermanNoun)
 validateNoun nouns (art, adj, nounStr) =
     case lookupNoun (T.pack nounStr) nouns of
-        Nothing -> Left $ "Error: noun '" ++ nounStr ++ "' not found in dictionary"
+        Nothing -> Left $ "Das Nomen '" ++ nounStr ++ "' wurde nicht gefunden.\n" ++
+                  "Verfügbare Nomen sind zum Beispiel:\n" ++
+                  showExampleNouns (take 3 nouns)
         Just noun -> Right (art, adj, noun)
+
+-- Hilfsfunktion für Beispiele
+showExampleNouns :: [GermanNoun] -> String
+showExampleNouns nouns = unlines $ map (\n -> "- " ++ T.unpack (word n)) nouns

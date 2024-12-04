@@ -42,54 +42,56 @@ preprocessPhrase phrase =
         Just art | isNegative art ->
             phrase { articleType = Negative }
         _ -> phrase
-
--- Modifizierte mainLoop
 mainLoop :: [GermanNoun] -> IO ()
 mainLoop nouns = do
     TIO.putStrLn "\nEnter German phrase (or 'quit' to exit):"
     input <- TIO.getLine
+    
     if T.toLower input == T.pack "quit"
         then TIO.putStrLn "Auf Wiedersehen!"
         else do
+            -- Erst parseInput versuchen
             case parseInput (T.unpack input) of
-                Left err -> do
-                    TIO.putStrLn $ T.pack $ "Error: " ++ err
-                Right result -> case validateNoun nouns result of
-                    Left err -> TIO.putStrLn $ T.pack err
-                    Right (art, adj', noun) -> do--hier noun ist ein Objekt
-                        let originalNoun = getOriginalNoun (T.unpack input)
-                        let nounIsPlural = case plural noun of
-                                                Just pluralForm -> originalNoun == pluralForm
-                                                Nothing -> False
-                        let isPlural = nounIsPlural
+                Left parseError -> do
+                    TIO.putStrLn $ T.pack parseError  -- Zeigt hilfreichen Tipp
+                    mainLoop nouns                    -- Weitermachen
+                
+                Right result -> do
+                    -- Dann validateNoun versuchen
+                    case validateNoun nouns result of
+                        Left validationError -> do
+                            TIO.putStrLn $ T.pack validationError  -- Zeigt Nomen-Vorschläge
+                            mainLoop nouns                         -- Weitermachen
                         
-                        -- Erstelle ursprüngliche Phrase
-                        let initialPhrase = AdjectivePhrase {
-                            article = art,
-                            adjective = adj',
-                            noun = noun,
-                            articleType = if art == Nothing then NoArticle else Definite,--hier sollte besser sein,kann man ein Atikelcheck funktion Schreiben
-                            number = if isPlural then Plural else Singular,
-                            case_ = Nominative --hier kann man auch checken
-                        }
-                        
-                        -- Vorverarbeitung der Phrase für Quantifikatoren
-                        let phrase = preprocessPhrase initialPhrase
-                        
-                        -- Verwende die unveränderte getReasoningSteps Funktion
-                        let reasoning = getReasoningSteps phrase
-                        let ending = getAdjectiveEnding phrase
-                        
-                        -- Rest der Logik bleibt gleich
-                        let finalResult = case art of
-                                              Nothing      -> adj' ++ ending ++ " " ++ T.unpack originalNoun
-                                              Just article -> article ++ " " ++ adj' ++ ending ++ " " ++ T.unpack originalNoun
-                        
-                        TIO.putStrLn $ T.pack reasoning
-                        TIO.putStrLn $ T.pack $ "Final result: " ++ finalResult
-                        
-                        mainLoop nouns
-
+                        Right (art, adj', noun) -> do
+                            let originalNoun = getOriginalNoun (T.unpack input)
+                            let nounIsPlural = case plural noun of
+                                    Just pluralForm -> originalNoun == pluralForm
+                                    Nothing -> False
+                            let isPlural = nounIsPlural
+                            
+                            -- Phrase erstellen und verarbeiten
+                            let initialPhrase = AdjectivePhrase {
+                                article = art,
+                                adjective = adj',
+                                noun = noun,
+                                articleType = if art == Nothing then NoArticle else Definite,
+                                number = if isPlural then Plural else Singular,
+                                case_ = Nominative
+                            }
+                            
+                            let phrase = preprocessPhrase initialPhrase
+                            let reasoning = getReasoningSteps phrase
+                            let ending = getAdjectiveEnding phrase
+                            
+                            let finalResult = case art of
+                                                  Nothing -> adj' ++ ending ++ " " ++ T.unpack originalNoun
+                                                  Just article -> article ++ " " ++ adj' ++ ending ++ " " ++ T.unpack originalNoun
+                            
+                            -- Ergebnisse anzeigen
+                            TIO.putStrLn $ T.pack reasoning
+                            TIO.putStrLn $ T.pack $ "Final result: " ++ finalResult
+                            mainLoop nouns  -- Weitermachen für nächste Eingabe
 main :: IO ()
 main = do
     hSetEncoding stdin utf8
