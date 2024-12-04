@@ -46,6 +46,22 @@ Starten Sie das Programm:
 ```bash
 cabal run wp
 ```
+## Container-Build
+
+Alternativ, das Projekt in einem Container laufen zu lassen:
+
+## Mit Podman (Docker)
+
+
+## Image bauen
+```bash
+podman build -t wp-app:latest .
+```
+
+## Container starten
+```bash
+podman run -it wp-app:latest
+```
 ## Verwendung
 Nach dem Start können Sie deutsche Phrasen eingeben, um die korrekten Adjektivendungen zu erhalten.
 Beispiele für gültige Eingaben:
