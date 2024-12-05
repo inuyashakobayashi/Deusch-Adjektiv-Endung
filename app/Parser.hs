@@ -50,11 +50,17 @@ einschauen,
     das ist ein beispiel ,und wenn man die singular nicht finden,
     findet es anstatt plural
 -}
+-- Helper function to extract the last word from genitive form
+-- Helper function to extract the last word from genitive formextractLastWord :: T.Text -> T.Text
+extractLastWord text = last $ T.words text
+
 lookupNoun :: T.Text -> [GermanNoun] -> Maybe GermanNoun
 lookupNoun searchWord nouns =
     case listToMaybe $ filter (\n -> word n == searchWord) nouns of
         Just noun -> Just noun
-        Nothing -> listToMaybe $ filter (\n -> plural n == Just searchWord) nouns
+        Nothing -> case listToMaybe $ filter (\n -> plural n == Just searchWord) nouns of
+            Just noun -> Just noun
+            Nothing -> listToMaybe $ filter (\n -> extractLastWord (genitive n) == searchWord) nouns 
 
 
 
