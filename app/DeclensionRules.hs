@@ -124,7 +124,6 @@ genderFromText g = case T.unpack g of
     "f" -> Feminine
     "n" -> Neuter
     _ -> Neuter
-
 getReasoningSteps :: AdjectivePhrase -> String
 getReasoningSteps phrase = unlines [
     "╔═══════════════════════════════════════════════════════════════",
@@ -138,63 +137,78 @@ getReasoningSteps phrase = unlines [
     "╠═══════════════════════════════════════════════════════════════",
     "║ ENTSCHEIDUNGSBAUM:",
     "║",
-    "║ ┌─ Mit Artikel? " ++ (case article phrase of 
-        Just art -> "Ja ──► '" ++ art ++ "'"
-        Nothing -> "Nein ──► benutze der-Form"),
-    case article phrase of
-        Nothing -> 
-            "║ └──► der-Form für " ++ showGender (genderFromText $ gender $ noun phrase) ++ 
-            " im " ++ show (case_ phrase) ++ 
-            " ──► Endung: " ++ getDerForm (genderFromText $ gender $ noun phrase) (case_ phrase) isPlural
-        Just art -> unlines [
-            "║    │",
-            "║    ├─ Artikeltyp: " ++ show (articleType phrase),
-            "║    │",
-            "║    ├─ Standardform? " ++ (if isStandardForm art (genderFromText $ gender $ noun phrase) (case_ phrase) 
-                                     then "Ja" 
-                                     else "Nein ──► benutze -en"),
-            "║    │",
-            "║    ├─ Plural? " ++ (if isPlural 
-                               then "Ja ──► benutze -en"
-                               else "Nein"),
-            "║    │",
-            if not isPlural 
-            then "║    └─ Zeigt Geschlecht? " ++ (if showsGender art 
-                                              then "Ja ──► benutze -e"
-                                              else "Nein ──► benutze " ++ getEndingForGender (genderFromText $ gender $ noun phrase))
-            else "║    └─ Endung: -en"
-         ],
+    getReasoning phrase,
     "║",
     "╠═══════════════════════════════════════════════════════════════",
     "║ ERGEBNIS:",
     "║ " ++ getFullPhrase (phrase { adjective = adjective phrase ++ getFinalEnding phrase }),
     "╚═══════════════════════════════════════════════════════════════"
     ]
-    where 
+    where
     isPlural = number phrase == Plural
-    getEndingForGender Masculine = "-er"
-    getEndingForGender Neuter = "-es"
-    getEndingForGender Feminine = "-e"
-    showGender Masculine = "Maskulinum"
-    showGender Feminine = "Femininum"
-    showGender Neuter = "Neutrum"
-    getFinalEnding p = 
-        case article p of
-            Nothing -> 
-                getDerForm (genderFromText $ gender $ noun p) (case_ p) isPlural
-            Just art -> 
-                if isQuantifier art || isAll art || isBoth art then
-                    "-e"
-                else if not (isStandardForm art (genderFromText $ gender $ noun p) (case_ p)) then
-                    "-en"
-                else if isPlural then
-                    "-en"
-                else if showsGender art then
-                    "-e"
-                else case genderFromText $ gender $ noun p of
-                    Masculine -> "-er"
-                    Neuter -> "-es"
-                    Feminine -> "-e"
+
+getReasoning :: AdjectivePhrase -> String
+getReasoning phrase = case article phrase of
+    Nothing -> -- Ohne Artikel
+        "║ ┌─ Mit Artikel? Nein ──► benutze der-Form\n" ++
+        "║ └──► der-Form für " ++ showGender (genderFromText $ gender $ noun phrase) ++ 
+        " im " ++ show (case_ phrase) ++ 
+        " ──► Endung: " ++ getDerForm (genderFromText $ gender $ noun phrase) (case_ phrase) isPlural
+        
+    Just art -> -- Mit Artikel
+        let isStd = isStandardForm art (genderFromText $ gender $ noun phrase) (case_ phrase)
+        in if not isStd 
+            then -- Nicht Standardform
+                "║ ┌─ Mit Artikel? Ja ──► '" ++ art ++ "'\n" ++
+                "║    │\n" ++
+                "║    └─ Standardform? Nein ──► Endung: -en"
+            else if isPlural
+                then -- Plural
+                    "║ ┌─ Mit Artikel? Ja ──► '" ++ art ++ "'\n" ++
+                    "║    │\n" ++
+                    "║    ├─ Standardform? Ja\n" ++
+                    "║    │\n" ++
+                    "║    └─ Singular? Nein ──► Endung: -en"
+                else -- Singular + weitere Prüfung
+                    "║ ┌─ Mit Artikel? Ja ──► '" ++ art ++ "'\n" ++
+                    "║    │\n" ++
+                    "║    ├─ Standardform? Ja\n" ++
+                    "║    │\n" ++
+                    "║    ├─ Singular? Ja\n" ++
+                    "║    │\n" ++
+                    "║    └─ Zeigt Geschlecht? " ++ 
+                    (if showsGender art 
+                        then "Ja ──► Endung: -e"
+                        else "Nein ──► Endung: " ++ 
+                            case genderFromText $ gender $ noun phrase of
+                                Masculine -> "-er"
+                                Neuter -> "-es"
+                                _ -> "-e")
+    where
+    isPlural = number phrase == Plural
+    
+showGender :: Gender -> String
+showGender Masculine = "Maskulinum"
+showGender Feminine = "Femininum"
+showGender Neuter = "Neutrum"
+
+getFinalEnding :: AdjectivePhrase -> String
+getFinalEnding phrase = case article phrase of
+    Nothing -> getDerForm (genderFromText $ gender $ noun phrase) (case_ phrase) isPlural
+    Just art -> 
+        if not (isStandardForm art (genderFromText $ gender $ noun phrase) (case_ phrase))
+            then "-en"
+            else if isPlural
+                then "-en"
+                else if showsGender art
+                    then "-e"
+                    else case genderFromText $ gender $ noun phrase of
+                        Masculine -> "-er"
+                        Neuter -> "-es"
+                        Feminine -> "-e"
+    where
+    isPlural = number phrase == Plural
+
 getFullPhrase :: AdjectivePhrase -> String
 getFullPhrase phrase = case article phrase of
     Just art -> art ++ " " ++ adjective phrase ++ " " ++  (nounStr  phrase)
