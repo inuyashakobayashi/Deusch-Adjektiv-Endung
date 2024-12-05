@@ -17,6 +17,33 @@ loadNouns filePath = do
         Right nouns -> return nouns
 -- Helper für Quantifikatoren
 
+determineNounForm :: GermanNoun -> String -> Maybe String -> NounForm
+determineNounForm noun originalNoun maybeArticle =
+    -- First check article-dependent cases
+    case maybeArticle of
+        Just "des" | T.unpack (genitive noun) == originalNoun -> GenitiveForm
+        Just "der" | T.unpack (genitive noun) == originalNoun -> GenitiveForm
+        
+        -- Check plural forms with articles
+        Just "die" | case plural noun of
+            Just pluralForm -> T.unpack pluralForm == originalNoun
+            Nothing -> False -> PluralForm
+            
+        -- If word matches genitive but no genitive article, treat as normal form
+        _ | T.unpack (genitive noun) == originalNoun -> 
+            case maybeArticle of
+                Just "der" -> GenitiveForm
+                Just "des" -> GenitiveForm
+                _ -> SingularForm  -- Default to singular if no genitive article
+                
+        -- Check plural without relying on article
+        _ | case plural noun of
+            Just pluralForm -> T.unpack pluralForm == originalNoun
+            Nothing -> False -> PluralForm
+            
+        -- Default case: must be singular
+        _ -> SingularForm
+
 -- Vorverarbeitung der AdjectivePhrase
 preprocessPhrase :: AdjectivePhrase -> AdjectivePhrase
 preprocessPhrase phrase =
@@ -63,21 +90,22 @@ mainLoop nouns = do
                             TIO.putStrLn $ T.pack validationError  -- Zeigt Nomen-Vorschläge
                             mainLoop nouns                         -- Weitermachen
                         
-                        Right (art, adj', noun) -> do
-                            let originalNoun = getOriginalNoun (T.unpack input)
-                            let nounIsPlural = case plural noun of
-                                    Just pluralForm -> originalNoun == pluralForm
-                                    Nothing -> False
-                            let isPlural = nounIsPlural
+                        Right (art, adj', noun,nounStr) -> do
+                            let originalNoun = nounStr
+                            let nounForm = determineNounForm noun originalNoun art
                             
                             -- Phrase erstellen und verarbeiten
                             let initialPhrase = AdjectivePhrase {
                                 article = art,
                                 adjective = adj',
                                 noun = noun,
+                                nounStr = originalNoun,
                                 articleType = if art == Nothing then NoArticle else Definite,
-                                number = if isPlural then Plural else Singular,
-                                case_ = Nominative
+                                case_ = Nominative,
+                                number = case nounForm of
+                                        PluralForm -> Plural
+                                        _ -> Singular,
+                                nounForm = nounForm 
                             }
                             
                             let phrase = preprocessPhrase initialPhrase
@@ -85,8 +113,8 @@ mainLoop nouns = do
                             let ending = getAdjectiveEnding phrase
                             
                             let finalResult = case art of
-                                                  Nothing -> adj' ++ ending ++ " " ++ T.unpack originalNoun
-                                                  Just article -> article ++ " " ++ adj' ++ ending ++ " " ++ T.unpack originalNoun
+                                                  Nothing -> adj' ++ ending ++ " " ++  originalNoun
+                                                  Just article -> article ++ " " ++ adj' ++ ending ++ " " ++  originalNoun
                             
                             -- Ergebnisse anzeigen
                             TIO.putStrLn $ T.pack reasoning

@@ -12,7 +12,8 @@ data Number = Singular | Plural
 
 data Case = Nominative | Accusative | Dative | Genitive
     deriving (Show, Eq)
-
+data NounForm = SingularForm | PluralForm | GenitiveForm
+    deriving (Show, Eq)
 data GermanNoun = GermanNoun {
     word :: T.Text,
     gender :: T.Text,
@@ -61,11 +62,13 @@ data AdjectivePhrase = AdjectivePhrase
     { article :: Maybe String
     , adjective :: String
     , noun :: GermanNoun
+    , nounStr :: String
     , articleType :: ArticleType
     , possessiveType :: Maybe PossessiveType
     , nonArticleAdj :: Maybe NonArticleAdjective  -- Neue Field für nicht-Artikel
-    , number :: Number
     , case_ :: Case
+    , number :: Number
+    , nounForm :: NounForm 
     } deriving (Show)
 
 instance FromJSON GermanNoun where

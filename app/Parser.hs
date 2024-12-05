@@ -85,13 +85,13 @@ parseInput input = case words (cleanInput input) of
     _ -> Left "Tipp: Bitte geben Sie maximal drei Wörter ein.\nFormat: [Artikel] Adjektiv Nomen\nBeispiel: 'das groß Haus'"
 
 -- Noun Validation
-validateNoun :: [GermanNoun] -> (Maybe String, String, String) -> Either String (Maybe String, String, GermanNoun)
+validateNoun :: [GermanNoun] -> (Maybe String, String, String) -> Either String (Maybe String, String, GermanNoun, String)
 validateNoun nouns (art, adj, nounStr) =
     case lookupNoun (T.pack nounStr) nouns of
         Nothing -> Left $ "Das Nomen '" ++ nounStr ++ "' wurde nicht gefunden.\n" ++
-                  "Verfügbare Nomen sind zum Beispiel:\n" ++
-                  showExampleNouns (take 3 nouns)
-        Just noun -> Right (art, adj, noun)
+                         "Verfügbare Nomen sind zum Beispiel:\n" ++
+                         showExampleNouns (take 3 nouns)
+        Just noun -> Right (art, adj, noun, nounStr)  -- Now includes the original nounStr
 
 -- Hilfsfunktion für Beispiele
 showExampleNouns :: [GermanNoun] -> String

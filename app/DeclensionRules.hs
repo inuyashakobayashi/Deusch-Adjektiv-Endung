@@ -197,5 +197,5 @@ getReasoningSteps phrase = unlines [
                     Feminine -> "-e"
 getFullPhrase :: AdjectivePhrase -> String
 getFullPhrase phrase = case article phrase of
-    Just art -> art ++ " " ++ adjective phrase ++ " " ++ T.unpack (word $ noun phrase)
-    Nothing -> adjective phrase ++ " " ++ T.unpack (word $ noun phrase)
+    Just art -> art ++ " " ++ adjective phrase ++ " " ++  (nounStr  phrase)
+    Nothing -> adjective phrase ++ " " ++  (nounStr  phrase)
