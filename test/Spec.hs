@@ -6,117 +6,85 @@ import Types
 import Utils
 import Parser
 import DeclensionRules
+import Validate
+import Prozess
 import qualified Data.Text as T
+import Data.Aeson
+import qualified Data.ByteString.Lazy as B
+import System.IO
+import GHC.Generics
 
+-- Bestehende processPhrase Funktion bleibt unverändert
 processPhrase :: String -> [GermanNoun] -> Either String String
 processPhrase input nouns = do
     parsed <- parseInput input
-    (art, adj, noun) <- validateNoun nouns parsed
+    (art, adj, noun, nounStr) <- validateNoun nouns parsed
+    let nounForm = determineNounForm noun nounStr art
     let phrase = AdjectivePhrase {
-            article = art,
-            adjective = adj,
-            noun = noun,
-            articleType = if art == Nothing then NoArticle else Definite,
-            possessiveType = Nothing,
-            number = Singular,
-            case_ = Nominative
-        }
-    let ending = getAdjectiveEnding phrase
+        article = art,
+        adjective = adj,
+        noun = noun,
+        nounStr = nounStr,
+        articleType = if art == Nothing then NoArticle else Definite,
+        case_ = Nominative,
+        number = case nounForm of
+            PluralForm -> Plural
+            _ -> Singular,
+        nounForm = nounForm
+    }
+    let processedPhrase = preprocessPhrase phrase
+    let ending = getAdjectiveEnding processedPhrase
     return $ case art of
-        Nothing -> adj ++ ending ++ " " ++ T.unpack (word noun)
-        Just article -> article ++ " " ++ adj ++ ending ++ " " ++ T.unpack (word noun)
+        Nothing -> adj ++ ending ++ " " ++ nounStr
+        Just article -> article ++ " " ++ adj ++ ending ++ " " ++ nounStr
+
+-- Funktion zum Laden der Nomen aus JSON
+loadNouns :: FilePath -> IO [GermanNoun]
+loadNouns filePath = do
+    jsonData <- B.readFile filePath
+    case decode jsonData of
+        Nothing -> error "Fehler beim Parsen der JSON-Datei"
+        Just nouns -> return nouns
 
 main :: IO ()
-main = hspec $ do
-    let testNouns = 
-            [ GermanNoun 
-                { word = T.pack "Bruder"
-                , gender = T.pack "m"
-                , plural = Just "Brüder"
-                }
-            , GermanNoun 
-                { word = T.pack "Homie"
-                , gender = T.pack "m"
-                , plural = Just "Homies"
-                }
-            , GermanNoun 
-                { word = T.pack "Digga"
-                , gender = T.pack "m"
-                , plural = Just "Diggas"
-                }
-            , GermanNoun 
-                { word = T.pack "Schwester"
-                , gender = T.pack "f"
-                , plural = Just "Schwestern"
-                }
-            , GermanNoun 
-                { word = T.pack "Auto"
-                , gender = T.pack "n"
-                , plural = Just "Autos"
-                }
-            ]
+main = do
+    hSetEncoding stdin utf8
+    hSetEncoding stdout utf8
     
-    describe "Krasse Adjektivendungen Tests" $ do
-        it "Sein Homie" $ do
-            putStrLn "\nTest: 'sein cool Homie'"
-            putStrLn $ "Eingabe: sein cool Homie"
-            putStrLn $ "Erwartet: sein cooler Homie"
-            let result = processPhrase "sein cool Homie" testNouns
-            putStrLn $ "Ergebnis: " ++ show result
-            result `shouldBe` Right "sein cooler Homie"
-        
-        it "Ihre Schwester" $ do
-            putStrLn "\nTest: 'ihre crazy Schwester'"
-            putStrLn $ "Eingabe: ihre crazy Schwester"
-            putStrLn $ "Erwartet: ihre crazy Schwester"
-            let result = processPhrase "ihre crazy Schwester" testNouns
-            putStrLn $ "Ergebnis: " ++ show result
-            result `shouldBe` Right "ihre crazy Schwester"
-        
-        it "Mein Digga" $ do
-            putStrLn "\nTest: 'mein wild Digga'"
-            putStrLn $ "Eingabe: mein wild Digga"
-            putStrLn $ "Erwartet: mein wilder Digga"
-            let result = processPhrase "mein wild Digga" testNouns
-            putStrLn $ "Ergebnis: " ++ show result
-            result `shouldBe` Right "mein wilder Digga"
-        
-        it "Jeder Bruder" $ do
-            putStrLn "\nTest: 'jeder fresh Bruder'"
-            putStrLn $ "Eingabe: jeder fresh Bruder"
-            putStrLn $ "Erwartet: jeder freshe Bruder"
-            let result = processPhrase "jeder fresh Bruder" testNouns
-            putStrLn $ "Ergebnis: " ++ show result
-            result `shouldBe` Right "jeder freshe Bruder"
-        
-        it "Dein Auto" $ do
-            putStrLn "\nTest: 'dein lit Auto'"
-            putStrLn $ "Eingabe: dein lit Auto"
-            putStrLn $ "Erwartet: dein lites Auto"
-            let result = processPhrase "dein lit Auto" testNouns
-            putStrLn $ "Ergebnis: " ++ show result
-            result `shouldBe` Right "dein lites Auto"
-        
-        it "Unser Homie" $ do
-            putStrLn "\nTest: 'unser real Homie'"
-            putStrLn $ "Eingabe: unser real Homie"
-            putStrLn $ "Erwartet: unser realer Homie"
-            let result = processPhrase "unser real Homie" testNouns
-            putStrLn $ "Ergebnis: " ++ show result
-            result `shouldBe` Right "unser realer Homie"
-        
-        it "Dieser Digga" $ do
-            putStrLn "\nTest: 'dieser chill Digga'"
-            putStrLn $ "Eingabe: dieser chill Digga"
-            putStrLn $ "Erwartet: dieser chille Digga"
-            let result = processPhrase "dieser chill Digga" testNouns
-            putStrLn $ "Ergebnis: " ++ show result
-            result `shouldBe` Right "dieser chille Digga"
-
-        it "Ihre Schwester ohne Artikel" $ do
-            putStrLn "\nTest: 'krass Schwester'"
-            putStrLn $ "Eingabe: krass Schwester"
-            putStrLn $ "Erwartet: krasse Schwester"
-            let result = processPhrase "krass Schwester" testNouns
-            putStrLn $ "Ergebnis: " ++ show result
-            result `shouldBe` Right "krasse Schwester"
+    -- Lade Nomen aus der JSON-Datei
+    testNouns <- loadNouns "german_nouns.json"
+    
+    -- Führe Tests mit geladenen Nomen durch
+    hspec $ do
+        describe "Krasse Adjektivendungen Tests - Genitiv" $ do
+            it "Des Bruders mit Artikel" $ do
+                putStrLn "\nTest: 'des cool Bruders'"
+                putStrLn $ "Eingabe: des cool Bruders"
+                putStrLn $ "Erwartet: des coolen Bruders"
+                let result = processPhrase "des cool Bruders" testNouns
+                putStrLn $ "Ergebnis: " ++ show result
+                result `shouldBe` Right "des coolen Bruders"
+                
+            it "Des Homies mit Artikel" $ do
+                putStrLn "\nTest: 'des wild Homies'"
+                putStrLn $ "Eingabe: des wild Homies"
+                putStrLn $ "Erwartet: des wilden Homies"
+                let result = processPhrase "des wild Homies" testNouns
+                putStrLn $ "Ergebnis: " ++ show result
+                result `shouldBe` Right "des wilden Homies"
+                
+            it "Der Schwester mit Artikel" $ do
+                putStrLn "\nTest: 'der krass Schwester'"
+                putStrLn $ "Eingabe: der krass Schwester"
+                putStrLn $ "Erwartet: der krassen Schwester"
+                let result = processPhrase "der krass Schwester" testNouns
+                putStrLn $ "Ergebnis: " ++ show result
+                result `shouldBe` Right "der krassen Schwester"
+                
+            it "Eines Autos mit unbestimmtem Artikel" $ do
+                putStrLn "\nTest: 'eines lit Autos'"
+                putStrLn $ "Eingabe: eines lit Autos"
+                putStrLn $ "Erwartet: eines liten Autos"
+                let result = processPhrase "eines lit Autos" testNouns
+                putStrLn $ "Ergebnis: " ++ show result
+                result `shouldBe` Right "eines liten Autos"

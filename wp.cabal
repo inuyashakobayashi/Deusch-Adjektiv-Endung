@@ -25,6 +25,7 @@ executable wp
                 Utils
                 Parser
                 DeclensionRules
+                Prozess
   hs-source-dirs: app
 
 test-suite wp-test
@@ -35,6 +36,7 @@ test-suite wp-test
                 Utils
                 Parser
                 DeclensionRules
+                Prozess
   hs-source-dirs: test, app
   build-depends: base,
                 hspec >= 2.7.1
