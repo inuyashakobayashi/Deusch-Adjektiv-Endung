@@ -9,6 +9,7 @@ import Parser
 import Prozess
 import System.IO (hSetEncoding, stdin, stdout, utf8)
 import Types
+import Validate
 
 loadNouns :: FilePath -> IO [GermanNoun]
 loadNouns filePath = do
@@ -65,7 +66,16 @@ mainLoop nouns = do
                         number = case nounF of
                           PluralForm -> Plural
                           _ -> Singular,
-                        nounForm = nounF
+                        nounForm = nounF,
+                        quantifierArt = case art of
+                          Just artText | isQuantifier artText ->
+                            case artText of
+                              "viele" -> Viele
+                              "wenige" -> Wenige
+                              "einige" -> Einige
+                              "mehrere" -> Mehrere
+                              _ -> error "Unexpected quantifier"
+                          _ -> Viele
                       }
 
               putStrLn $ "Assigned case: " ++ show (case_ initialPhrase)

@@ -68,7 +68,8 @@ data AdjectivePhrase = AdjectivePhrase
     articleType :: ArticleType,
     case_ :: Case,
     number :: Number,
-    nounForm :: NounForm
+    nounForm :: NounForm,
+    quantifierArt :: NonArticleAdjective
   }
   deriving (Show)
 

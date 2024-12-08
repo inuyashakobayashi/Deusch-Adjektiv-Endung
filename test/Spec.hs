@@ -10,6 +10,7 @@ import Prozess
 import System.IO
 import Test.Hspec
 import Types
+import Validate
 
 -- Bestehende processPhrase Funktion bleibt unverändert
 processPhrase :: String -> [GermanNoun] -> Either String String
@@ -30,7 +31,16 @@ processPhrase input nouns = do
             number = case nounF of
               PluralForm -> Plural
               _ -> Singular,
-            nounForm = nounF
+            nounForm = nounF,
+            quantifierArt = case art of
+              Just artText | isQuantifier artText ->
+                case artText of
+                  "viele" -> Viele
+                  "wenige" -> Wenige
+                  "einige" -> Einige
+                  "mehrere" -> Mehrere
+                  _ -> error "Unexpected quantifier"
+              _ -> Viele
           }
   let processedPhrase = preprocessPhrase phrase
   let ending = getAdjectiveEnding processedPhrase

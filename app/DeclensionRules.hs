@@ -10,6 +10,7 @@ where
 
 import qualified Data.Text as T
 import Types
+import Validate
 
 isStandardForm :: String -> Gender -> Case -> Bool
 isStandardForm art gen caseType = case (art, gen, caseType) of
@@ -90,10 +91,15 @@ showsGender art = not $ art `elem` ["ein", "mein", "dein", "sein", "ihr", "unser
 
 getAdjectiveEnding :: AdjectivePhrase -> String
 getAdjectiveEnding phrase = case article phrase of
+  -- Kein Artikel oder Quantifier -> der-Form
   Nothing -> getDerForm (genderFromText $ gender $ noun phrase) (case_ phrase) isPlural
+  Just art
+    | isQuantifier art ->
+        getDerForm (genderFromText $ gender $ noun phrase) (case_ phrase) isPlural
+  -- Normaler Artikel
   Just art ->
     if not (isStandardForm art (genderFromText $ gender $ noun phrase) (case_ phrase))
-      then "en" -- Kein Bindestrich mehr
+      then "en"
       else
         if isPlural
           then "en"
@@ -158,8 +164,18 @@ getReasoning phrase = case article phrase of
       ++ show (case_ phrase)
       ++ " ──► Endung: "
       ++ getDerForm (genderFromText $ gender $ noun phrase) (case_ phrase) isPlural
+  Just art
+    | isQuantifier art ->
+        -- Quantifier (wie viele, wenige, etc.) - behandle wie ohne Artikel
+        "║ ┌─ Mit Artikel? Nein ──► benutze der-Form\n"
+          ++ "║ └──► der-Form für "
+          ++ showGender (genderFromText $ gender $ noun phrase)
+          ++ " im "
+          ++ show (case_ phrase)
+          ++ " ──► Endung: "
+          ++ getDerForm (genderFromText $ gender $ noun phrase) (case_ phrase) isPlural
   Just art ->
-    -- Mit Artikel
+    -- Mit normalem Artikel
     let isStd = isStandardForm art (genderFromText $ gender $ noun phrase) (case_ phrase)
      in if not isStd
           then -- Nicht Standardform
@@ -167,8 +183,8 @@ getReasoning phrase = case article phrase of
             "║ ┌─ Mit Artikel? Ja ──► '"
               ++ art
               ++ "'\n"
-              ++ "║    │\n"
-              ++ "║    └─ Standardform? Nein ──► Endung: -en"
+              ++ "║ │\n"
+              ++ "║ └─ Standardform? Nein ──► Endung: -en"
           else
             if isPlural
               then -- Plural
@@ -176,21 +192,21 @@ getReasoning phrase = case article phrase of
                 "║ ┌─ Mit Artikel? Ja ──► '"
                   ++ art
                   ++ "'\n"
-                  ++ "║    │\n"
-                  ++ "║    ├─ Standardform? Ja\n"
-                  ++ "║    │\n"
-                  ++ "║    └─ Singular? Nein ──► Endung: -en"
+                  ++ "║ │\n"
+                  ++ "║ ├─ Standardform? Ja\n"
+                  ++ "║ │\n"
+                  ++ "║ └─ Singular? Nein ──► Endung: -en"
               else -- Singular + weitere Prüfung
 
                 "║ ┌─ Mit Artikel? Ja ──► '"
                   ++ art
                   ++ "'\n"
-                  ++ "║    │\n"
-                  ++ "║    ├─ Standardform? Ja\n"
-                  ++ "║    │\n"
-                  ++ "║    ├─ Singular? Ja\n"
-                  ++ "║    │\n"
-                  ++ "║    └─ Zeigt Geschlecht? "
+                  ++ "║ │\n"
+                  ++ "║ ├─ Standardform? Ja\n"
+                  ++ "║ │\n"
+                  ++ "║ ├─ Singular? Ja\n"
+                  ++ "║ │\n"
+                  ++ "║ └─ Zeigt Geschlecht? "
                   ++ ( if showsGender art
                          then "Ja ──► Endung: -e"
                          else
@@ -210,14 +226,14 @@ showGender Neuter = "Neutrum"
 
 getFinalEnding :: AdjectivePhrase -> String
 getFinalEnding phrase = case article phrase of
-  Nothing -> getDerForm (genderFromText $ gender $ noun phrase) (case_ phrase) isPlural
+  -- Kein Artikel oder Quantifier -> der-Form
+  Nothing -> "-" ++ getDerForm (genderFromText $ gender $ noun phrase) (case_ phrase) isPlural
+  Just art
+    | isQuantifier art ->
+        "-" ++ getDerForm (genderFromText $ gender $ noun phrase) (case_ phrase) isPlural
+  -- Normaler Artikel
   Just art ->
-    ( if not
-        ( isStandardForm
-            art
-            (genderFromText $ gender $ noun phrase)
-            (case_ phrase)
-        )
+    ( if not (isStandardForm art (genderFromText $ gender $ noun phrase) (case_ phrase))
         || isPlural
         then "-en"
         else
