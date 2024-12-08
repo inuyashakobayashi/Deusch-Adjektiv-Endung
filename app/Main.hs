@@ -39,19 +39,7 @@ mainLoop nouns = do
             Right (art, adj', nounObj, nounPart) -> do
               let originalNoun = nounPart
 
-              -- Erweiterte Debug-Ausgaben für Nomenformen
-              putStrLn "\n=== NOUN FORM DEBUG ==="
-              putStrLn $ "Base form (word): " ++ T.unpack (word nounObj)
-              putStrLn $ "Genitive form: " ++ T.unpack (genitive nounObj)
-              putStrLn $ "Original noun: " ++ originalNoun
-
               let nounF = determineNounForm nounObj originalNoun art
-              putStrLn $ "Determined noun form: " ++ show nounF
-
-              -- Rest der Debug-Ausgaben
-              putStrLn "\n=== PHRASE DEBUG ==="
-              putStrLn $ "Original noun: " ++ originalNoun
-              putStrLn $ "Noun form detected: " ++ show nounF
 
               let initialPhrase =
                     AdjectivePhrase
@@ -77,10 +65,6 @@ mainLoop nouns = do
                               _ -> error "Unexpected quantifier"
                           _ -> Viele
                       }
-
-              putStrLn $ "Assigned case: " ++ show (case_ initialPhrase)
-              putStrLn $ "Article: " ++ show (article initialPhrase)
-              putStrLn "==================\n"
 
               let phrase = preprocessPhrase initialPhrase
               let reasoning = getReasoningSteps phrase

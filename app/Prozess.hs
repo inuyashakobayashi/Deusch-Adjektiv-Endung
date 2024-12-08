@@ -1,3 +1,11 @@
+-- |
+-- Modul: Process
+-- Beschreibung: Verarbeitet die Nomenformen und Artikeltypen für die deutsche Adjektivdeklination
+-- Bewertungskriterien implementiert:
+-- - Pattern Matching (in beiden Funktionen)
+-- - Guards (in preprocessPhrase)
+-- - Funktionen mit where/let (in determineNounForm)
+-- - Modularisierung
 module Prozess
   ( determineNounForm,
     preprocessPhrase,
@@ -7,21 +15,50 @@ where
 import qualified Data.Text as T
 import Types
 import Validate
+  ( isAll,
+    isBoth,
+    isDefinite,
+    isDemonstrative,
+    isIndefinite,
+    isInterrogative,
+    isNegative,
+    isPossessive,
+    isQuantifier,
+    isSome,
+    isSuch,
+    isUniversal,
+  )
 
+-- |
+-- Bestimmt die Form eines Nomens (Singular, Plural oder Genitiv)
+-- basierend auf der Originalform und dem optionalen Artikel.
+--
+-- Bewertungskriterien:
+-- - Pattern Matching (in case words)
+-- - Verwendung von let für lokale Definitionen
+-- - Guards (in elem-Check)
+--
+-- Parameter:
+--   - nounObj: Das Nomen-Objekt aus der Datenbank oder json
+--   - originalNoun: Die eingegebene Form des Nomens
+--   - maybeArticle: Der optionale Artikel
+--
+-- Beispiele:
+--   - "Animation" mit "die" -> SingularForm
+--   - "Bilds" -> GenitiveForm
+--   - "Häuser" -> PluralForm
 determineNounForm :: GermanNoun -> String -> Maybe String -> NounForm
 determineNounForm nounObj originalNoun maybeArticle =
-  let baseForm = T.unpack (word nounObj) -- z.B. "Animation"
-      fullGenitiveForm = T.unpack (genitive nounObj) -- z.B. "der Animation"
+  let baseForm = T.unpack (word nounObj) -- Grundform, z.B. "Animation"
+      fullGenitiveForm = T.unpack (genitive nounObj) -- Vollständige Genitivform
       genitiveForm = case words fullGenitiveForm of
         (_ : nounPart : _) -> nounPart -- Extrahiere Nomen aus "der Animation"
         _ -> ""
    in if originalNoun == genitiveForm && originalNoun == baseForm
         then -- Spezialfall: Grundform = Genitivform
         case maybeArticle of
-          -- Eindeutige Genitivartikel
           Just "des" -> GenitiveForm
           Just "der" -> GenitiveForm
-          -- Artikel die auf Genitiv hinweisen können
           Just art
             | art
                 `elem` [ "deines",
@@ -32,7 +69,6 @@ determineNounForm nounObj originalNoun maybeArticle =
                          "eures"
                        ] ->
                 GenitiveForm
-          -- Bei anderen Artikeln -> Grundform
           _ -> SingularForm
         else
           if originalNoun == genitiveForm
@@ -43,8 +79,23 @@ determineNounForm nounObj originalNoun maybeArticle =
                 else case plural nounObj of
                   Just pForm | T.unpack pForm == originalNoun -> PluralForm
                   _ -> SingularForm -- Fallback
-                  -- Vorverarbeitung der AdjectivePhrase
 
+-- |
+-- Verarbeitet eine AdjectivePhrase und bestimmt den korrekten ArticleType
+-- basierend auf dem vorhandenen Artikel.
+--
+-- Bewertungskriterien:
+-- - Pattern Matching mit Guards
+-- - Record Update Syntax
+-- - Mehrfache Guards für verschiedene Artikeltypen
+--
+-- Parameter:
+--   - phrase: Die zu verarbeitende AdjectivePhrase
+--
+-- Beispiele:
+--   - "der" -> Definite
+--   - "dieser" -> Demonstrative
+--   - "viele" -> NoArticle
 preprocessPhrase :: AdjectivePhrase -> AdjectivePhrase
 preprocessPhrase phrase =
   case article phrase of

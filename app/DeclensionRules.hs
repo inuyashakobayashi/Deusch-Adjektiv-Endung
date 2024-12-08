@@ -128,18 +128,6 @@ getReasoningSteps phrase =
       "║ ADJEKTIVENDUNGEN - ANALYSEPROZESS",
       "╠═══════════════════════════════════════════════════════════════",
       "║ Eingabe: " ++ getFullPhrase phrase,
-      "║ Nomen: "
-        ++ T.unpack (word $ noun phrase)
-        ++ " ("
-        ++ showGender (genderFromText $ gender $ noun phrase)
-        ++ ", "
-        ++ if isPlural
-          then "Plural"
-          else
-            "Singular"
-              ++ ", "
-              ++ show (case_ phrase)
-              ++ ")",
       "╠═══════════════════════════════════════════════════════════════",
       "║ ENTSCHEIDUNGSBAUM:",
       "║",
@@ -150,8 +138,6 @@ getReasoningSteps phrase =
       "║ " ++ getFullPhrase (phrase {adjective = adjective phrase ++ getFinalEnding phrase}),
       "╚═══════════════════════════════════════════════════════════════"
     ]
-  where
-    isPlural = number phrase == Plural
 
 getReasoning :: AdjectivePhrase -> String
 getReasoning phrase = case article phrase of
