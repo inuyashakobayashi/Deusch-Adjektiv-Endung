@@ -23,26 +23,35 @@ mainLoop :: [GermanNoun] -> IO ()
 mainLoop nouns = do
   TIO.putStrLn "\nEnter German phrase (or 'quit' to exit):"
   input <- TIO.getLine
-
   if T.toLower input == T.pack "quit"
     then TIO.putStrLn "Auf Wiedersehen!"
     else do
-      -- Erst parseInput versuchen
       case parseInput (T.unpack input) of
         Left parseError -> do
-          TIO.putStrLn $ T.pack parseError -- Zeigt hilfreichen Tipp
-          mainLoop nouns -- Weitermachen
+          TIO.putStrLn $ T.pack parseError
+          mainLoop nouns
         Right result -> do
-          -- Dann validateNoun versuchen
           case validateNoun nouns result of
             Left validationError -> do
-              TIO.putStrLn $ T.pack validationError -- Zeigt Nomen-Vorschläge
-              mainLoop nouns -- Weitermachen
+              TIO.putStrLn $ T.pack validationError
+              mainLoop nouns
             Right (art, adj', noun, nounStr) -> do
               let originalNoun = nounStr
-              let nounForm = determineNounForm noun originalNoun art
 
-              -- Phrase erstellen und verarbeiten
+              -- Erweiterte Debug-Ausgaben für Nomenformen
+              putStrLn "\n=== NOUN FORM DEBUG ==="
+              putStrLn $ "Base form (word): " ++ T.unpack (word noun)
+              putStrLn $ "Genitive form: " ++ T.unpack (genitive noun)
+              putStrLn $ "Original noun: " ++ originalNoun
+
+              let nounForm = determineNounForm noun originalNoun art
+              putStrLn $ "Determined noun form: " ++ show nounForm
+
+              -- Rest der Debug-Ausgaben
+              putStrLn "\n=== PHRASE DEBUG ==="
+              putStrLn $ "Original noun: " ++ originalNoun
+              putStrLn $ "Noun form detected: " ++ show nounForm
+
               let initialPhrase =
                     AdjectivePhrase
                       { article = art,
@@ -50,25 +59,29 @@ mainLoop nouns = do
                         noun = noun,
                         nounStr = originalNoun,
                         articleType = if art == Nothing then NoArticle else Definite,
-                        case_ = Nominative,
+                        case_ = case nounForm of
+                          GenitiveForm -> Genitive
+                          _ -> Nominative,
                         number = case nounForm of
                           PluralForm -> Plural
                           _ -> Singular,
                         nounForm = nounForm
                       }
 
+              putStrLn $ "Assigned case: " ++ show (case_ initialPhrase)
+              putStrLn $ "Article: " ++ show (article initialPhrase)
+              putStrLn "==================\n"
+
               let phrase = preprocessPhrase initialPhrase
               let reasoning = getReasoningSteps phrase
               let ending = getAdjectiveEnding phrase
-
               let finalResult = case art of
                     Nothing -> adj' ++ ending ++ " " ++ originalNoun
                     Just article -> article ++ " " ++ adj' ++ ending ++ " " ++ originalNoun
 
-              -- Ergebnisse anzeigen
               TIO.putStrLn $ T.pack reasoning
               TIO.putStrLn $ T.pack $ "Final result: " ++ finalResult
-              mainLoop nouns -- Weitermachen für nächste Eingabe
+              mainLoop nouns
 
 main :: IO ()
 main = do

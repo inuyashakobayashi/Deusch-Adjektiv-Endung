@@ -13,6 +13,7 @@ import Types
 
 isStandardForm :: String -> Gender -> Case -> Bool
 isStandardForm art gen caseType = case (art, gen, caseType) of
+  -- Only consider these forms standard in Nominative case
   -- Bestimmte Artikel
   ("der", Masculine, Nominative) -> True
   ("die", Feminine, Nominative) -> True
@@ -20,7 +21,7 @@ isStandardForm art gen caseType = case (art, gen, caseType) of
   -- Unbestimmte Artikel
   ("ein", _, Nominative) -> True
   ("eine", Feminine, Nominative) -> True
-  -- Possessivpronomen
+  -- Possessivpronomen (only in Nominative)
   ("ihre", Feminine, Nominative) -> True
   ("ihr", _, Nominative) -> True
   ("kein", _, Nominative) -> True
@@ -37,11 +38,11 @@ isStandardForm art gen caseType = case (art, gen, caseType) of
   ("seine", Feminine, Nominative) -> True
   ("dein", _, Nominative) -> True
   ("deine", Feminine, Nominative) -> True
-  -- Demonstrativpronomen
+  -- Demonstrativpronomen (only in Nominative)
   ("dieser", Masculine, Nominative) -> True
   ("diese", Feminine, Nominative) -> True
   ("dieses", Neuter, Nominative) -> True
-  -- Indefinitpronomen
+  -- Indefinitpronomen (only in Nominative)
   ("jede", Feminine, Nominative) -> True
   ("jedes", Neuter, Nominative) -> True
   ("jeder", Masculine, Nominative) -> True
@@ -54,6 +55,7 @@ isStandardForm art gen caseType = case (art, gen, caseType) of
   ("solcher", Masculine, Nominative) -> True
   ("solche", Feminine, Nominative) -> True
   ("solches", Neuter, Nominative) -> True
+  -- All other cases (including all Genitive cases) are non-standard
   _ -> False
 
 -- viele und viel ist kein artikel und beide und wenige mehrere und einige
@@ -82,36 +84,28 @@ getPluralEnding caseType = case caseType of
   _ -> "en"
 
 showsGender :: String -> Bool
-showsGender art = not $ art `elem` ["ein", "mein", "dein", "sein", "ihr", "unser", "euer", "Ihr"]
+showsGender art = not $ art `elem` ["ein", "mein", "dein", "sein", "ihr", "unser", "euer", "Ihr", "kein"]
 
 -- hier sollt noch mehr ergänzen
 
 getAdjectiveEnding :: AdjectivePhrase -> String
-getAdjectiveEnding phrase =
-  let isPlural = number phrase == Plural
-   in case articleType phrase of
-        NoArticle ->
-          getDerForm
-            (genderFromText $ gender $ noun phrase)
-            (case_ phrase)
-            isPlural -- Neuer Parameter für Plural
-        _ -> case article phrase of
-          Nothing ->
-            getDerForm
-              (genderFromText $ gender $ noun phrase)
-              (case_ phrase)
-              isPlural -- Neuer Parameter für Plural
-          Just art ->
-            if not (isStandardForm art (genderFromText $ gender $ noun phrase) (case_ phrase))
-              || isPlural -- Plural-Check
-              then "en"
-              else
-                if not (showsGender art)
-                  then case genderFromText $ gender $ noun phrase of
-                    Masculine -> "er"
-                    Neuter -> "es"
-                    _ -> "e"
-                  else "e"
+getAdjectiveEnding phrase = case article phrase of
+  Nothing -> getDerForm (genderFromText $ gender $ noun phrase) (case_ phrase) isPlural
+  Just art ->
+    if not (isStandardForm art (genderFromText $ gender $ noun phrase) (case_ phrase))
+      then "en" -- Kein Bindestrich mehr
+      else
+        if isPlural
+          then "en"
+          else
+            if showsGender art
+              then "e"
+              else case genderFromText $ gender $ noun phrase of
+                Masculine -> "er"
+                Neuter -> "es"
+                Feminine -> "e"
+  where
+    isPlural = number phrase == Plural
 
 -- Mapping from json Datei
 genderFromText :: T.Text -> Gender
