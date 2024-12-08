@@ -35,37 +35,37 @@ mainLoop nouns = do
             Left validationError -> do
               TIO.putStrLn $ T.pack validationError
               mainLoop nouns
-            Right (art, adj', noun, nounStr) -> do
-              let originalNoun = nounStr
+            Right (art, adj', nounObj, nounPart) -> do
+              let originalNoun = nounPart
 
               -- Erweiterte Debug-Ausgaben für Nomenformen
               putStrLn "\n=== NOUN FORM DEBUG ==="
-              putStrLn $ "Base form (word): " ++ T.unpack (word noun)
-              putStrLn $ "Genitive form: " ++ T.unpack (genitive noun)
+              putStrLn $ "Base form (word): " ++ T.unpack (word nounObj)
+              putStrLn $ "Genitive form: " ++ T.unpack (genitive nounObj)
               putStrLn $ "Original noun: " ++ originalNoun
 
-              let nounForm = determineNounForm noun originalNoun art
-              putStrLn $ "Determined noun form: " ++ show nounForm
+              let nounF = determineNounForm nounObj originalNoun art
+              putStrLn $ "Determined noun form: " ++ show nounF
 
               -- Rest der Debug-Ausgaben
               putStrLn "\n=== PHRASE DEBUG ==="
               putStrLn $ "Original noun: " ++ originalNoun
-              putStrLn $ "Noun form detected: " ++ show nounForm
+              putStrLn $ "Noun form detected: " ++ show nounF
 
               let initialPhrase =
                     AdjectivePhrase
                       { article = art,
                         adjective = adj',
-                        noun = noun,
+                        noun = nounObj,
                         nounStr = originalNoun,
                         articleType = if art == Nothing then NoArticle else Definite,
-                        case_ = case nounForm of
+                        case_ = case nounF of
                           GenitiveForm -> Genitive
                           _ -> Nominative,
-                        number = case nounForm of
+                        number = case nounF of
                           PluralForm -> Plural
                           _ -> Singular,
-                        nounForm = nounForm
+                        nounForm = nounF
                       }
 
               putStrLn $ "Assigned case: " ++ show (case_ initialPhrase)
@@ -77,7 +77,7 @@ mainLoop nouns = do
               let ending = getAdjectiveEnding phrase
               let finalResult = case art of
                     Nothing -> adj' ++ ending ++ " " ++ originalNoun
-                    Just article -> article ++ " " ++ adj' ++ ending ++ " " ++ originalNoun
+                    Just artText -> artText ++ " " ++ adj' ++ ending ++ " " ++ originalNoun
 
               TIO.putStrLn $ T.pack reasoning
               TIO.putStrLn $ T.pack $ "Final result: " ++ finalResult

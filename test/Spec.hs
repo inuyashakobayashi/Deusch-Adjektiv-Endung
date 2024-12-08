@@ -4,43 +4,39 @@ module Main (main) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as B
-import qualified Data.Text as T
 import DeclensionRules
-import GHC.Generics
 import Parser
 import Prozess
 import System.IO
 import Test.Hspec
 import Types
-import Utils
-import Validate
 
 -- Bestehende processPhrase Funktion bleibt unverändert
 processPhrase :: String -> [GermanNoun] -> Either String String
 processPhrase input nouns = do
   parsed <- parseInput input
-  (art, adj, noun, nounStr) <- validateNoun nouns parsed
-  let nounForm = determineNounForm noun nounStr art
+  (art, adj, nounObj, nounPart) <- validateNoun nouns parsed
+  let nounF = determineNounForm nounObj nounPart art
   let phrase =
         AdjectivePhrase
           { article = art,
             adjective = adj,
-            noun = noun,
-            nounStr = nounStr,
+            noun = nounObj,
+            nounStr = nounPart,
             articleType = if art == Nothing then NoArticle else Definite,
-            case_ = case nounForm of
+            case_ = case nounF of
               GenitiveForm -> Genitive
               _ -> Nominative,
-            number = case nounForm of
+            number = case nounF of
               PluralForm -> Plural
               _ -> Singular,
-            nounForm = nounForm
+            nounForm = nounF
           }
   let processedPhrase = preprocessPhrase phrase
   let ending = getAdjectiveEnding processedPhrase
   return $ case art of
-    Nothing -> adj ++ ending ++ " " ++ nounStr
-    Just article -> article ++ " " ++ adj ++ ending ++ " " ++ nounStr
+    Nothing -> adj ++ ending ++ " " ++ nounPart
+    Just artText -> artText ++ " " ++ adj ++ ending ++ " " ++ nounPart
 
 -- Funktion zum Laden der Nomen aus JSON
 loadNouns :: FilePath -> IO [GermanNoun]

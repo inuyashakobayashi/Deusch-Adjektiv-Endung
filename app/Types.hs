@@ -66,8 +66,6 @@ data AdjectivePhrase = AdjectivePhrase
     noun :: GermanNoun,
     nounStr :: String,
     articleType :: ArticleType,
-    possessiveType :: Maybe PossessiveType,
-    nonArticleAdj :: Maybe NonArticleAdjective, -- Neue Field für nicht-Artikel
     case_ :: Case,
     number :: Number,
     nounForm :: NounForm

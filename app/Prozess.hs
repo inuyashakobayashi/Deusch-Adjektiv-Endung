@@ -9,9 +9,9 @@ import Types
 import Validate
 
 determineNounForm :: GermanNoun -> String -> Maybe String -> NounForm
-determineNounForm noun originalNoun maybeArticle =
-  let baseForm = T.unpack (word noun) -- z.B. "Animation"
-      fullGenitiveForm = T.unpack (genitive noun) -- z.B. "der Animation"
+determineNounForm nounObj originalNoun maybeArticle =
+  let baseForm = T.unpack (word nounObj) -- z.B. "Animation"
+      fullGenitiveForm = T.unpack (genitive nounObj) -- z.B. "der Animation"
       genitiveForm = case words fullGenitiveForm of
         (_ : nounPart : _) -> nounPart -- Extrahiere Nomen aus "der Animation"
         _ -> ""
@@ -40,7 +40,7 @@ determineNounForm noun originalNoun maybeArticle =
             else
               if originalNoun == baseForm
                 then SingularForm -- Klare Grundform
-                else case plural noun of
+                else case plural nounObj of
                   Just pForm | T.unpack pForm == originalNoun -> PluralForm
                   _ -> SingularForm -- Fallback
                   -- Vorverarbeitung der AdjectivePhrase
